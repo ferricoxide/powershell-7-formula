@@ -7,7 +7,7 @@ values:
   pkg:
     download_sig: ''
     download_uri: ''
-    install_root: '/opt/microsoft/powershell/7'
+    install_root: ''
     name: ''
   config:
     repo_rpm_name: ''
