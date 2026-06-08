@@ -7,6 +7,10 @@
 {%- set repo_rpm_name = powershell_7.config.repo_rpm_name %}
 {%- set repo_rpm_uri = powershell_7.config.repo_rpm_uri %}
 
+{#- Establish absolute fallback if parameter key maps to an empty string #}
+{%- set pkg_map = powershell_7.get('pkg', {}) %}
+{%- set base_root = pkg_map.get('install_root') | default('/opt/microsoft/powershell/7', true) %}
+
 {%- if not powershell_7.pkg.download_uri %}
 Activate Signing-Key for Installed Repo-def RPM:
   cmd.run:
@@ -14,14 +18,15 @@ Activate Signing-Key for Installed Repo-def RPM:
         KEY_FILE=$(
           rpm -ql {{ repo_rpm_name }} | grep '^/etc/pki/rpm-gpg/'
         )
-        if [ -n "$KEY_FILE" ]; then
+        if [[ -n "$KEY_FILE" ]]
+        then
           rpm --import "$KEY_FILE"
         fi
     - onlyif: |
         KEY_FILE=$(
           rpm -ql {{ repo_rpm_name }} 2>/dev/null | grep '^/etc/pki/rpm-gpg/'
         )
-        [ -z "$KEY_FILE" ] && exit 1
+        [[ -z "$KEY_FILE" ]] && exit 1
         SIG_NAME=$(
           basename "$KEY_FILE" | sed -e 's/RPM-GPG-KEY-//i' -e 's/-prod//i'
         )
@@ -47,7 +52,7 @@ Install Repo-def RPM:
 Ensure Executable Permission on Core Binaries:
   file.managed:
     - mode: 755
-    - name: '{{ powershell_7.pkg.install_root }}/pwsh'
+    - name: '{{ base_root }}/pwsh'
     - require:
       - file: 'Ensure Global Read Permissions on Binaries'
 
@@ -55,16 +60,16 @@ Ensure Global Read Permissions on Binaries:
   file.directory:
     - dir_mode: 755
     - file_mode: 644
-    - name: '{{ powershell_7.pkg.install_root }}'
+    - name: '{{ base_root }}'
     - recurse:
       - mode
     - require:
       - archive: 'Extract Powershell from Archive'
 
-{%- for path_segment in powershell_7.pkg.install_root.split('/') if path_segment %}
+{%- for path_segment in base_root.split('/') if path_segment %}
   {%- do path_accumulator.append(path_segment) %}
   {%- set current_parent_dir = '/' ~ path_accumulator | join('/') %}
-  {%- if current_parent_dir != powershell_7.pkg.install_root %}
+  {%- if current_parent_dir != base_root %}
 Ensure Parent Directory Permissions for {{ current_parent_dir }}:
   file.directory:
     - dir_mode: 755
@@ -80,7 +85,7 @@ Extract Powershell from Archive:
     - enforce_toplevel: False
     - group: 'root'
     - keep_source: False
-    - name: '{{ powershell_7.pkg.install_root }}'
+    - name: '{{ base_root }}'
     {%- if not powershell_7.pkg.download_sig %}
     - skip_verify: True
     {%- else %}
@@ -93,7 +98,7 @@ Install PowerShell to userland:
   file.symlink:
     - force: True
     - name: /usr/local/bin/pwsh
-    - target: '{{ powershell_7.pkg.install_root }}/pwsh'
+    - target: '{{ base_root }}/pwsh'
     - require:
       - file: 'Ensure Executable Permission on Core Binaries'
 {%- elif powershell_7.pkg.download_uri.endswith('.rpm') %}
