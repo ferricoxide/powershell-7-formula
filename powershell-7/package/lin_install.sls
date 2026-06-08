@@ -42,6 +42,8 @@ Install Repo-def RPM:
     - sources:
       - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
 {%- elif not powershell_7.pkg.download_uri.endswith('.rpm') %}
+{%- set path_accumulator = [] %}
+
 Ensure Executable Permission on Core Binaries:
   file.managed:
     - mode: 755
@@ -58,6 +60,19 @@ Ensure Global Read Permissions on Binaries:
       - mode
     - require:
       - archive: 'Extract Powershell from Archive'
+
+{%- for path_segment in powershell_7.pkg.install_root.split('/') if path_segment %}
+  {%- do path_accumulator.append(path_segment) %}
+  {%- set current_parent_dir = '/' ~ path_accumulator | join('/') %}
+  {%- if current_parent_dir != powershell_7.pkg.install_root %}
+Ensure Parent Directory Permissions for {{ current_parent_dir }}:
+  file.directory:
+    - dir_mode: 755
+    - name: '{{ current_parent_dir }}'
+    - require_in:
+      - archive: 'Extract Powershell from Archive'
+  {%- endif %}
+{%- endfor %}
 
 Extract Powershell from Archive:
   archive.extracted:
