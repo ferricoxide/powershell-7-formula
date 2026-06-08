@@ -29,7 +29,7 @@ Activate Signing-Key for Installed Repo-def RPM:
     - require:
       - pkg: 'Install Repo-def RPM'
 
-Install Powershell RPM:
+Install PowerShell to userland:
   pkg.installed:
     - name: '{{ powershell_7.pkg.name }}'
     - pkg_verify: True
@@ -42,6 +42,23 @@ Install Repo-def RPM:
     - sources:
       - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
 {%- elif not powershell_7.pkg.download_uri.endswith('.rpm') %}
+Ensure Executable Permission on Core Binaries:
+  file.managed:
+    - mode: 755
+    - name: '{{ powershell_7.pkg.install_root }}/pwsh'
+    - require:
+      - file: 'Ensure Global Read Permissions on Binaries'
+
+Ensure Global Read Permissions on Binaries:
+  file.directory:
+    - dir_mode: 755
+    - file_mode: 644
+    - name: '{{ powershell_7.pkg.install_root }}'
+    - recurse:
+      - mode
+    - require:
+      - archive: 'Extract Powershell from Archive'
+
 Extract Powershell from Archive:
   archive.extracted:
     - archive_format: 'tar'
@@ -56,6 +73,14 @@ Extract Powershell from Archive:
     {%- endif %}
     - source: '{{ powershell_7.pkg.download_uri }}'
     - user: 'root'
+
+Install PowerShell to userland:
+  file.symlink:
+    - force: True
+    - name: /usr/local/bin/pwsh
+    - target: '{{ powershell_7.pkg.install_root }}/pwsh'
+    - require:
+      - file: 'Ensure Executable Permission on Core Binaries'
 {%- elif powershell_7.pkg.download_uri.endswith('.rpm') %}
 NO-OP Message:
   test.show_notification:
