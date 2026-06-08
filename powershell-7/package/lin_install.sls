@@ -41,4 +41,28 @@ Install Repo-def RPM:
     - skip_verify: True
     - sources:
       - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
+{%- elif not powershell_7.pkg.download_uri.endswith('.rpm') %}
+Extract Powershell from Archive:
+  archive.extracted:
+    - archive_format: 'tar'
+    - enforce_toplevel: False
+    - group: 'root'
+    - keep_source: False
+    - name: '{{ powershell_7.pkg.install_root }}'
+    {%- if not powershell_7.pkg.download_sig %}
+    - skip_verify: True
+    {%- else %}
+    - source_hash: '{{ powershell_7.pkg.download_sig }}'
+    {%- endif %}
+    - source: '{{ powershell_7.pkg.download_uri }}'
+    - user: 'root'
+{%- elif powershell_7.pkg.download_uri.endswith('.rpm') %}
+NO-OP Message:
+  test.show_notification:
+    - text: |-
+        ---------------------------------------------
+        TBD: logic for installing from a self-hosted
+        RPM that has no associated repository-
+        definition file
+        ---------------------------------------------
 {%- endif %}
