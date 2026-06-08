@@ -13,13 +13,13 @@
 ---
 values:
   pkg:
-    name: powershell-7-redhat
     download_sig: ''
     download_uri: ''
+    name: 'packages-microsoft-prod'
     {%- if salt['grains.get']('osmajorrelease') | int == 8 %}
-    repository_uri: https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
+    repository_uri: 'https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm'
     {%- elif salt['grains.get']('osmajorrelease') | int == 9 %}
-    repository_uri: https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
+    repository_uri: 'https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm'
     {%- else %}
     repository_uri: ''
     {%- endif %}
