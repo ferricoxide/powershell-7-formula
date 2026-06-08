@@ -7,9 +7,9 @@
 
 include:
 {%- if grains.kernel == "Linux" %}
-  - postman-api.package.lin_install
+  - powershell-7.package.lin_install
 {%- elif grains.kernel == "Windows" %}
-  - postman-api.package.win_install
+  - powershell-7.package.win_install
 {%- endif %}
 
 Avoid being a null-router (package/install) - Powershell 7:
