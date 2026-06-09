@@ -1,58 +1,27 @@
 # -*- coding: utf-8 -*-
 # vim: ft=sls
 
-{#- Get the `tplroot` from `tpldir` #}
 {%- set tplroot = tpldir.split('/')[0] %}
 {%- from tplroot ~ "/map.jinja" import mapdata as powershell_7 with context %}
-{%- set repo_rpm_name = powershell_7.config.repo_rpm_name %}
-{%- set repo_rpm_uri = powershell_7.config.repo_rpm_uri %}
+{%- set config_map = powershell_7.get('config') or {} %}
+{%- set pkg_map = powershell_7.get('pkg') or {} %}
 
-{#- Establish absolute fallback if parameter key maps to an empty string #}
-{%- set pkg_map = powershell_7.get('pkg', {}) %}
-{%- set base_root = pkg_map.get('install_root') | default('/opt/microsoft/powershell/7', true) %}
+{%- set repo_rpm_name = config_map.get('repo_rpm_name', '') %}
+{%- set repo_rpm_uri = config_map.get('repo_rpm_uri', '') %}
+{%- set base_root = pkg_map.get('install_root') |
+    default('/opt/microsoft/powershell/7', true) %}
+{%- set powershell_download_uri = pkg_map.get('download_uri', '') %}
+{%- set powershell_package_name = pkg_map.get('name', '') %}
 
-{%- if not powershell_7.pkg.download_uri %}
-Activate Signing-Key for Installed Repo-def RPM:
-  cmd.run:
-    - name: |
-        KEY_FILE=$(
-          rpm -ql {{ repo_rpm_name }} | grep '^/etc/pki/rpm-gpg/'
-        )
-        if [[ -n "$KEY_FILE" ]]
-        then
-          rpm --import "$KEY_FILE"
-        fi
-    - onlyif: |
-        KEY_FILE=$(
-          rpm -ql {{ repo_rpm_name }} 2>/dev/null | grep '^/etc/pki/rpm-gpg/'
-        )
-        [[ -z "$KEY_FILE" ]] && exit 1
-        SIG_NAME=$(
-          basename "$KEY_FILE" | sed -e 's/RPM-GPG-KEY-//i' -e 's/-prod//i'
-        )
-        ! rpm -q gpg-pubkey --qf '%{SUMMARY}\n' | grep -qi "$SIG_NAME"
-    - require:
-      - pkg: 'Install Repo-def RPM'
-
-Install PowerShell to Userland:
-  pkg.installed:
-    - name: '{{ powershell_7.pkg.name }}'
-    - pkg_verify: True
-    - require:
-      - cmd: 'Activate Signing-Key for Installed Repo-def RPM'
-
-Install Repo-def RPM:
-  pkg.installed:
-    - skip_verify: True
-    - sources:
-      - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
-{%- elif not powershell_7.pkg.download_uri.endswith('.rpm') %}
+{%- if powershell_download_uri and not
+    powershell_download_uri.endswith('.rpm') %}
 {%- set path_accumulator = [] %}
 
 Ensure Executable Permission on Core Binaries:
   file.managed:
     - mode: 755
     - name: '{{ base_root }}/pwsh'
+    - replace: False
     - require:
       - file: 'Ensure Global Read Permissions on Binaries'
 
@@ -86,12 +55,13 @@ Extract Powershell from Archive:
     - group: 'root'
     - keep_source: False
     - name: '{{ base_root }}'
-    {%- if not powershell_7.pkg.download_sig %}
+    {%- if not pkg_map.get('download_sig') %}
     - skip_verify: True
-    {%- else %}
-    - source_hash: '{{ powershell_7.pkg.download_sig }}'
     {%- endif %}
-    - source: '{{ powershell_7.pkg.download_uri }}'
+    - source: '{{ powershell_download_uri }}'
+    {%- if pkg_map.get('download_sig') %}
+    - source_hash: '{{ pkg_map.get('download_sig') }}'
+    {%- endif %}
     - user: 'root'
 
 Install PowerShell Dependencies:
@@ -106,13 +76,56 @@ Install PowerShell to Userland:
       - file: 'Ensure Executable Permission on Core Binaries'
       - pkg: 'Install PowerShell Dependencies'
     - target: '{{ base_root }}/pwsh'
-{%- elif powershell_7.pkg.download_uri.endswith('.rpm') %}
-NO-OP Message:
-  test.show_notification:
-    - text: |-
-        ---------------------------------------------
-        TBD: logic for installing from a self-hosted
-        RPM that has no associated repository-
-        definition file
-        ---------------------------------------------
+
+{%- else %}
+
+{%- if not powershell_download_uri %}
+Activate Signing-Key for Installed Repo-def RPM:
+  cmd.run:
+    - name: |
+        KEY_FILE=$(
+          rpm -ql {{ repo_rpm_name }} | grep '^/etc/pki/rpm-gpg/'
+        )
+        if [[ -n "$KEY_FILE" ]]
+        then
+          rpm --import "$KEY_FILE"
+        fi
+    - onlyif: |
+        KEY_FILE=$(
+          rpm -ql {{ repo_rpm_name }} 2>/dev/null \
+            | grep '^/etc/pki/rpm-gpg/'
+        )
+        [[ -z "$KEY_FILE" ]] && exit 1
+        SIG_NAME=$(
+          basename "$KEY_FILE" \
+            | sed -e 's/RPM-GPG-KEY-//i' -e 's/-prod//i'
+        )
+        !
+        rpm -q gpg-pubkey --qf '%{SUMMARY}\n' \
+          | grep -qi "$SIG_NAME"
+    - require:
+      - pkg: 'Install Repo-def RPM'
+{%- endif %}
+
+Install PowerShell to Userland:
+  pkg.installed:
+    {%- if powershell_download_uri %}
+    - skip_verify: True
+    - sources:
+      - '{{ powershell_package_name }}': '{{ powershell_download_uri }}'
+    {%- else %}
+    - name: '{{ powershell_package_name }}'
+    - pkg_verify: True
+    - require:
+      - cmd: 'Activate Signing-Key for Installed Repo-def RPM'
+    {%- endif %}
+
+{%- if not powershell_download_uri %}
+Install Repo-def RPM:
+  pkg.installed:
+    - skip_verify: True
+    - sources:
+      - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
+{%- endif %}
+
 {%- endif %}
