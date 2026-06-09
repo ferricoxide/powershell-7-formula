@@ -47,6 +47,13 @@ Enforce System SELinux Contexts on Extracted Tree:
       - sls: {{ sls_package_install }}
     - watch_in:
       - file: 'Manage PowerShell Client Configuration File'
+
+Recompile fapolicyd Rules Engine:
+  cmd.run:
+    - name: 'fagenrules --load'
+    - onchanges:
+      - file: 'Allow PowerShell in fapolicyd'
+    - onlyif: 'command -v fagenrules'
 {%- endif %}
 
 Manage PowerShell Client Configuration File:
