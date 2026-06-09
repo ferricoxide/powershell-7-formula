@@ -11,7 +11,7 @@ include:
 
 {%- set pkg_map = powershell_7.get('pkg') or {} %}
 {%- set base_root = pkg_map.get('install_root') |
-    default('/opt/microsoft/powershell/7', true)
+        default('/opt/microsoft/powershell/7', true)
 %}
 {%- set config_target = base_root ~ '/powershell.config.json' %}
 {%- set lookup_id = 'Manage PowerShell Client Configuration File' %}
@@ -20,15 +20,21 @@ include:
       'powershell.config.json.jinja'
     ]
 %}
-
 {%- set powershell_download_uri = pkg_map.get('download_uri', '') %}
-
+{%- set shell_path = '/usr/local/bin/pwsh' if (
+        powershell_download_uri and not
+        powershell_download_uri.endswith('.rpm')
+      ) else '/usr/bin/pwsh' %}
 {%- if powershell_download_uri and not
        powershell_download_uri.endswith('.rpm')
 %}
+
 Allow PowerShell in fapolicyd:
   file.managed:
-    - contents: 'allow perm=any dir={{ base_root }}/ : all'
+    - contents: |
+        allow perm=execute all : path={{ shell_path }}
+        allow perm=execute all : dir={{ base_root }}/
+        allow perm=any dir={{ base_root }}/ : all
     - makedirs: True
     - name: '/etc/fapolicyd/rules.d/10-powershell.rules'
 
@@ -68,3 +74,13 @@ Manage PowerShell Client Configuration File:
       - sls: {{ sls_package_install }}
     - source: {{ files_switch(src_list, lookup=lookup_id) }}
     - template: jinja
+
+{%- set shell_path = '/usr/local/bin/pwsh' if (
+        powershell_download_uri and not powershell_download_uri.endswith('.rpm')
+      ) else '/usr/bin/pwsh' %}
+Register PowerShell as Valid System Shell:
+  file.append:
+    - name: '/etc/shells'
+    - text: '{{ shell_path }}'
+    - require:
+      - sls: {{ sls_package_install }}
