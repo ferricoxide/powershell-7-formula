@@ -26,6 +26,12 @@ include:
 {%- if powershell_download_uri and not
        powershell_download_uri.endswith('.rpm')
 %}
+Allow PowerShell in fapolicyd:
+  file.managed:
+    - contents: 'allow perm=any dir={{ base_root }}/ : all'
+    - makedirs: True
+    - name: '/etc/fapolicyd/rules.d/10-powershell.rules'
+
 Configure SELinux Policy Context for Custom Tree:
   selinux.fcontext_policy_present:
     - filetype: 'a'
