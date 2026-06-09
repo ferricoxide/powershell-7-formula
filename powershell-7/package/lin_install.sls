@@ -34,7 +34,7 @@ Activate Signing-Key for Installed Repo-def RPM:
     - require:
       - pkg: 'Install Repo-def RPM'
 
-Install PowerShell to userland:
+Install PowerShell to Userland:
   pkg.installed:
     - name: '{{ powershell_7.pkg.name }}'
     - pkg_verify: True
@@ -94,13 +94,18 @@ Extract Powershell from Archive:
     - source: '{{ powershell_7.pkg.download_uri }}'
     - user: 'root'
 
-Install PowerShell to userland:
+Install PowerShell Dependencies:
+  pkg.installed:
+    - name: 'libicu'
+
+Install PowerShell to Userland:
   file.symlink:
     - force: True
     - name: /usr/local/bin/pwsh
-    - target: '{{ base_root }}/pwsh'
     - require:
       - file: 'Ensure Executable Permission on Core Binaries'
+      - pkg: 'Install PowerShell Dependencies'
+    - target: '{{ base_root }}/pwsh'
 {%- elif powershell_7.pkg.download_uri.endswith('.rpm') %}
 NO-OP Message:
   test.show_notification:
