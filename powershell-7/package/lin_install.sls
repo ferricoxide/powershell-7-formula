@@ -5,13 +5,25 @@
 {%- from tplroot ~ "/map.jinja" import mapdata as powershell_7 with context %}
 {%- set config_map = powershell_7.get('config') or {} %}
 {%- set pkg_map = powershell_7.get('pkg') or {} %}
-
-{%- set repo_rpm_name = config_map.get('repo_rpm_name', '') %}
-{%- set repo_rpm_uri = config_map.get('repo_rpm_uri', '') %}
+{%- set os_major = salt['grains.get']('osmajorrelease', '9') %}
+{%- set default_repo_uri = (
+      'https://packages.microsoft.com/config/rhel/' ~
+      os_major ~ '/packages-microsoft-prod.rpm'
+    )
+%}
+{%- set repo_rpm_name = config_map.get('repo_rpm_name') |
+      default('packages-microsoft-prod', true)
+%}
+{%- set repo_rpm_uri = config_map.get('repo_rpm_uri') |
+      default(default_repo_uri, true)
+%}
 {%- set base_root = pkg_map.get('install_root') |
-    default('/opt/microsoft/powershell/7', true) %}
+      default('/opt/microsoft/powershell/7', true)
+%}
 {%- set powershell_download_uri = pkg_map.get('download_uri', '') %}
-{%- set powershell_package_name = pkg_map.get('name', '') %}
+{%- set powershell_package_name = pkg_map.get('name') |
+      default('powershell', true)
+%}
 
 {%- if powershell_download_uri and not
     powershell_download_uri.endswith('.rpm') %}
@@ -35,18 +47,18 @@ Ensure Global Read Permissions on Binaries:
     - require:
       - archive: 'Extract Powershell from Archive'
 
-{%- for path_segment in base_root.split('/') if path_segment %}
-  {%- do path_accumulator.append(path_segment) %}
-  {%- set current_parent_dir = '/' ~ path_accumulator | join('/') %}
-  {%- if current_parent_dir != base_root %}
+  {%- for path_segment in base_root.split('/') if path_segment %}
+    {%- do path_accumulator.append(path_segment) %}
+    {%- set current_parent_dir = '/' ~ path_accumulator | join('/') %}
+    {%- if current_parent_dir != base_root %}
 Ensure Parent Directory Permissions for {{ current_parent_dir }}:
   file.directory:
     - dir_mode: 755
     - name: '{{ current_parent_dir }}'
     - require_in:
       - archive: 'Extract Powershell from Archive'
-  {%- endif %}
-{%- endfor %}
+    {%- endif %}
+  {%- endfor %}
 
 Extract Powershell from Archive:
   archive.extracted:
@@ -79,7 +91,7 @@ Install PowerShell to Userland:
 
 {%- else %}
 
-{%- if not powershell_download_uri %}
+  {%- if not powershell_download_uri %}
 Activate Signing-Key for Installed Repo-def RPM:
   cmd.run:
     - name: |
@@ -105,7 +117,7 @@ Activate Signing-Key for Installed Repo-def RPM:
           | grep -qi "$SIG_NAME"
     - require:
       - pkg: 'Install Repo-def RPM'
-{%- endif %}
+  {%- endif %}
 
 Install PowerShell to Userland:
   pkg.installed:
@@ -120,12 +132,12 @@ Install PowerShell to Userland:
       - cmd: 'Activate Signing-Key for Installed Repo-def RPM'
     {%- endif %}
 
-{%- if not powershell_download_uri %}
+  {%- if not powershell_download_uri %}
 Install Repo-def RPM:
   pkg.installed:
     - skip_verify: True
     - sources:
       - '{{ repo_rpm_name }}': '{{ repo_rpm_uri }}'
-{%- endif %}
+  {%- endif %}
 
 {%- endif %}
