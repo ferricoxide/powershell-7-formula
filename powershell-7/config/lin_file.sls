@@ -75,12 +75,47 @@ Manage PowerShell Client Configuration File:
     - source: {{ files_switch(src_list, lookup=lookup_id) }}
     - template: jinja
 
-{%- set shell_path = '/usr/local/bin/pwsh' if (
-        powershell_download_uri and not powershell_download_uri.endswith('.rpm')
-      ) else '/usr/bin/pwsh' %}
 Register PowerShell as Valid System Shell:
   file.append:
     - name: '/etc/shells'
     - text: '{{ shell_path }}'
     - require:
       - sls: {{ sls_package_install }}
+
+Setup Basic Powershell User-Profiles:
+  file.managed:
+    - dir_mode: 0755
+    - group: root
+    - makedirs: True
+    - mode: '0644'
+    - name: '/etc/skel/.config/powershell/profile.ps1'
+    - selinux:
+        serange: 's0'
+        serole: 'object_r'
+        setype: 'bin_t'
+        seuser: 'system_u'
+    - source: 'salt://{{ tplroot }}/files/default/profile.ps1'
+    - user: root
+
+Setup User-Envs:
+  file.managed:
+    - contents: |
+        # Suppress vendor tracking for enterprise and regulatory compliance
+        export DOTNET_CLI_TELEMETRY_OPTOUT=1
+        export POWERSHELL_TELEMETRY_OPTOUT=1
+        export POWERSHELL_UPDATECHECK=Off
+
+        # Alias for those who like to type
+        if [[ "${SHELL}" == *"/bash" ]]
+        then
+          alias powershell="/usr/local/bin/pwsh"
+        fi
+    - group: root
+    - mode: '0644'
+    - name: '/etc/profile.d/powershell.sh'
+    - selinux:
+        serange: 's0'
+        serole: 'object_r'
+        setype: 'bin_t'
+        seuser: 'system_u'
+    - user: root
