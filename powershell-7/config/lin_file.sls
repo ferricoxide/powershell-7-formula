@@ -36,7 +36,7 @@ Allow PowerShell in fapolicyd:
         allow perm=execute all : dir={{ base_root }}/
         allow perm=any dir={{ base_root }}/ : all
     - makedirs: True
-    - name: '/etc/fapolicyd/rules.d/10-powershell.rules'
+    - name: '/etc/fapolicyd/rules.d/70-powershell.rules'
 
 Configure SELinux Policy Context for Custom Tree:
   selinux.fcontext_policy_present:
