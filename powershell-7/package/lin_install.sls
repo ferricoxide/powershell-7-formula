@@ -6,10 +6,10 @@
 {%- set config_map = powershell_7.get('config') or {} %}
 {%- set pkg_map = powershell_7.get('pkg') or {} %}
 {%- set os_major = salt['grains.get']('osmajorrelease', '9') %}
-{%- set default_repo_uri = (
+{%- set default_repo_uri =
       'https://packages.microsoft.com/config/rhel/' ~
-      os_major ~ '/packages-microsoft-prod.rpm'
-    )
+      os_major ~
+      '/packages-microsoft-prod.rpm'
 %}
 {%- set repo_rpm_name = config_map.get('repo_rpm_name') |
       default('packages-microsoft-prod', true)
@@ -26,7 +26,7 @@
 %}
 
 {%- if powershell_download_uri and not
-    powershell_download_uri.endswith('.rpm') %}
+       powershell_download_uri.endswith('.rpm') %}
 {%- set path_accumulator = [] %}
 
 Ensure Executable Permission on Core Binaries:
@@ -83,7 +83,7 @@ Install PowerShell Dependencies:
 Install PowerShell to Userland:
   file.symlink:
     - force: True
-    - name: /usr/local/bin/pwsh
+    - name: '/usr/local/bin/pwsh'
     - require:
       - file: 'Ensure Executable Permission on Core Binaries'
       - pkg: 'Install PowerShell Dependencies'
@@ -103,17 +103,23 @@ Activate Signing-Key for Installed Repo-def RPM:
           rpm --import "$KEY_FILE"
         fi
     - onlyif: |
+        # Find the path to the GPG file dropped by the repo RPM
         KEY_FILE=$(
           rpm -ql {{ repo_rpm_name }} 2>/dev/null \
             | grep '^/etc/pki/rpm-gpg/'
         )
+
+        # Exit with 1 (skip state) if no key file is found
         [[ -z "$KEY_FILE" ]] && exit 1
+
+        # Strip paths/suffixes to extract short name (e.g., 'microsoft')
         SIG_NAME=$(
           basename "$KEY_FILE" \
             | sed -e 's/RPM-GPG-KEY-//i' -e 's/-prod//i'
         )
-        !
-        rpm -q gpg-pubkey --qf '%{SUMMARY}\n' \
+
+        # Invert result: Exit 0 (run) if key is NOT in keyring
+        ! rpm -q gpg-pubkey --qf '%{SUMMARY}\n' \
           | grep -qi "$SIG_NAME"
     - require:
       - pkg: 'Install Repo-def RPM'
