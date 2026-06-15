@@ -50,9 +50,17 @@ Executes _just_ the `config` state to uninstall the Powershell 7 client-configur
 
 ### Linux
 
+Preliminary testing was performed on a STIG-hardened installation-target with FIPS-mode, SELinux and `fapolicyd` all enabled. No issues were observed during the authoring of this content[^3]. If any are found, please open a documentation-PR with generic guidance for how to provoke the issues encountered.
+
 
 ### Windows
 
 
-[^1]: As of this README's writing, only Enterprise Linux and related distros (Red Hat and Oracle Enterprise, CentOS Stream, Rocky and Alma Linux). It has only been specifically tested with EL **_9_** variants.
+[^1]: As of this README's writing, only Enterprise Linux and related distros (Red Hat and Oracle Enterprise, CentOS Stream, Rocky and Alma Linux) are supported. It has only been specifically tested with EL **_9_** variants.
 [^2]: As of this README's writing, this functionality has only been tested on Windows Server 2022
+[^3]: It is _possible_ &mdash; particularly when using the non-RPM installation-versions &mdash; that downloaded commandlets will not immediately work until the `fapolicyd` trust-database is updated. If such update is required:
+    ```bash
+    # fapolicyd-cli --file add ${INSTALL_ROOT}/ --trust-file powershell
+    # fapolicyd-cli --update
+    # fagenrules --load
+    ```
