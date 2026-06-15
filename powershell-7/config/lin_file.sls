@@ -56,6 +56,19 @@ Enforce System SELinux Contexts on Extracted Tree:
     - watch_in:
       - file: 'Manage PowerShell Client Configuration File'
 
+Index Extracted PowerShell Tree in Trust Database:
+  cmd.run:
+    - name: |
+        fapolicyd-cli --file add {{ base_root }}/ \
+          --trust-file powershell
+        fapolicyd-cli --update
+    - onchanges:
+      - file: 'Allow PowerShell in fapolicyd'
+    - require:
+      - sls: '{{ sls_package_install }}'
+    - watch_in:
+      - cmd: 'Recompile fapolicyd Rules Engine'
+
 Recompile fapolicyd Rules Engine:
   cmd.run:
     - name: 'fagenrules --load'
@@ -64,33 +77,6 @@ Recompile fapolicyd Rules Engine:
     - onlyif: 'command -v fagenrules'
 
 {%- endif %}
-
-Configure OpenSSH PowerShell Subsystem Dropin:
-  file.managed:
-    - contents: |
-        Subsystem powershell {{ shell_path }} -sshs -NoLogo -NoProfile
-    - group: 'root'
-    - mode: '0600'
-    - name: '/etc/ssh/sshd_config.d/40-powershell.conf'
-    - user: 'root'
-
-Ensure System Wide Module Directory Baseline:
-  file.directory:
-    - dir_mode: '0755'
-    - group: 'root'
-    - makedirs: 'True'
-    - name: '{{ base_root }}/Modules'
-    - user: 'root'
-
-Manage Global PowerShell Shell Environment:
-  file.managed:
-    - group: 'root'
-    - mode: '0644'
-    - name: '{{ base_root }}/profile.ps1'
-    - require:
-      - sls: {{ sls_package_install }}
-    - source: 'salt://{{ tplroot }}/files/default/profile.ps1'
-    - user: 'root'
 
 Manage PowerShell Client Configuration File:
   file.managed:
