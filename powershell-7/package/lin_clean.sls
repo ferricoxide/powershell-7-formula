@@ -34,8 +34,46 @@ Remove PowerShell Core Package:
   pkg.removed:
     - name: '{{ powershell_package_name }}'
 
+      {%- if not powershell_download_uri %}
+Deactivate Signing-Key for Installed Repo-def RPM:
+  cmd.run:
+    - name: |
+        KEY_FILE=$(
+          rpm -ql {{ repo_rpm_name }} 2>/dev/null \
+            | grep '^/etc/pki/rpm-gpg/'
+        )
+        if [[ -n "$KEY_FILE" ]]
+        then
+          SIG_NAME=$(
+            basename "$KEY_FILE" \
+              | sed -e 's/RPM-GPG-KEY-//i' -e 's/-prod//i'
+          )
+          RPM_KEY=$(
+            rpm -q gpg-pubkey \
+              | while read -r key; do
+                if rpm -q "$key" --qf '%{SUMMARY}\n' \
+                  | grep -qi "$SIG_NAME"; then
+                  echo "$key"
+                  break
+                fi
+              done
+          )
+          if [[ -n "$RPM_KEY" ]]
+          then
+            rpm -e "$RPM_KEY"
+          fi
+        fi
+    - onlyif: 'rpm -q {{ repo_rpm_name }}'
+    - require:
+      - pkg: 'Remove PowerShell Core Package'
+      {%- endif %}
+
 Remove PowerShell Repo Definition Package:
   pkg.removed:
     - name: '{{ repo_rpm_name }}'
+        {%- if not powershell_download_uri %}
+    - require:
+      - cmd: 'Deactivate Signing-Key for Installed Repo-def RPM'
+        {%- endif %}
 
 {%- endif %}
