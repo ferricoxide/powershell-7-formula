@@ -1,0 +1,49 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+---
+# ==============================================================================
+# PowerShell 7 Formula Pillar Configuration Example
+# ==============================================================================
+# This file demonstrates the available parameters for customizing the lookup
+# dictionary used by the formula states on target environments.
+# ==============================================================================
+
+powershell-7:
+  # ----------------------------------------------------------------------------
+  # Custom lookup key parameters (corresponds to map.jinja lookup data)
+  # ----------------------------------------------------------------------------
+  lookup:
+    config:
+      # The package identifier name for the vendor repository definition RPM.
+      # Default on RedHat families is 'packages-microsoft-prod'.
+      repo_rpm_name: 'packages-microsoft-prod'
+
+      # The exact location URI to fetch the repository definition RPM.
+      # Defaults dynamically based on major OS version (RHEL 8 vs RHEL 9).
+      repo_rpm_uri: 'https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm'
+
+    pkg:
+      # Optional cryptographic checksum hash used to validate archive binary
+      # extractions. Mandatory if enforcement verification is requested.
+      #
+      # To generate a suitable signature for packages downloaded using the
+      # `download_uri` parameter, you can execute something like:
+      #
+      #   curl ${download_uri} | sha256sum | awk '{ print "sha256=" $1 }'
+      download_sig: 'sha256=a8a05aa19fb681468d6d884202336eae0af17b882731d173cf89a30a3d9b7c40'
+
+      # The retrieval pathway for the engine installer.
+      # - Leave blank to use native system package repositories.
+      # - Provide a path ending in '.rpm' to perform a direct local package installation.
+      # - Provide a path ending in '.tar.gz' to trigger custom decoupled extraction.
+      download_uri: 'https://github.com/PowerShell/PowerShell/releases/download/v7.6.2/powershell-7.6.2-linux-x64.tar.gz'
+
+      # The absolute home path folder directory target root ($PSHOME) where
+      # the shell binary stack and module layouts reside.
+      # Default on RedHat families is '/opt/microsoft/powershell/7'.
+      install_root: '/apps/microsoft/powershell/7.6.2'
+
+      # The local system package engine name identifier when fetching via
+      # package management tools (e.g., yum/dnf/msiexec).
+      # Default on RedHat families is 'powershell'.
+      name: 'powershell'

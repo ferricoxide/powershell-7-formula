@@ -9,20 +9,11 @@
 
 include:
   - {{ sls_package_install }}
+{%- if grains.kernel == "Linux" %}
+  - powershell-7.config.lin_file
+{%- elif grains.kernel == "Windows" %}
+  - powershell-7.config.win_file
+{%- endif %}
 
-powershell-7-config-file-file-managed:
-  file.managed:
-    - name: {{ powershell_7.config }}
-    - source: {{ files_switch(['example.tmpl'],
-                              lookup='powershell-7-config-file-file-managed'
-                 )
-              }}
-    - mode: 644
-    - user: root
-    - group: {{ powershell_7.rootgroup }}
-    - makedirs: True
-    - template: jinja
-    - require:
-      - sls: {{ sls_package_install }}
-    - context:
-        powershell_7: {{ powershell_7 | json }}
+Avoid being a null-router (config/file) - Powershell 7:
+  test.nop: []

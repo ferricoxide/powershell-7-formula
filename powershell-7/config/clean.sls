@@ -7,10 +7,11 @@
 {%- from tplroot ~ "/map.jinja" import mapdata as powershell_7 with context %}
 
 include:
-  - {{ sls_service_clean }}
+{%- if grains.kernel == "Linux" %}
+  - powershell-7.config.lin_clean
+{%- elif grains.kernel == "Windows" %}
+  - powershell-7.config.win_clean
+{%- endif %}
 
-powershell-7-config-clean-file-absent:
-  file.absent:
-    - name: {{ powershell_7.config }}
-    - require:
-      - sls: {{ sls_service_clean }}
+Avoid being a null-router (config/clean) - PowerShell 7:
+  test.nop: []

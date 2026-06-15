@@ -9,3 +9,19 @@ concurrency:
 jobs:
   test:
     uses: plus3it/actions-workflows/.github/workflows/test.yml@ddd67e99878a285f728de398c1116151c2d7791a
+
+  linux:
+    uses: plus3it/actions-workflows/.github/workflows/test-salt-linux.yml@ddd67e99878a285f728de398c1116151c2d7791a
+    strategy:
+      matrix:
+        os_version:
+          - 8
+          - 9
+        salt_state:
+          - powershell-7
+        salt_pillar_root:
+          - ./tests/pillar/test-linux-main
+    with:
+      salt-os-version: ${{ matrix.os_version }}
+      salt-state: ${{ matrix.salt_state }}
+      salt-pillar-root: ${{ matrix.salt_pillar_root }}

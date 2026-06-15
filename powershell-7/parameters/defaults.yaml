@@ -5,14 +5,11 @@
 ---
 values:
   pkg:
-    name: powershell-7
-  rootgroup: root
-  config: '/etc/powershell-7'
-  service:
-    name: powershell-7
-  subcomponent:
-    config: '/etc/powershell-7-subcomponent-formula.conf'
-  # Just here for testing
-  added_in_defaults: defaults_value
-  winner: defaults
+    download_sig: ''
+    download_uri: ''
+    install_root: ''
+    name: ''
+  config:
+    repo_rpm_name: ''
+    repo_rpm_uri: ''
 ...

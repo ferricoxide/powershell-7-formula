@@ -16,7 +16,7 @@ powershell-7-subcomponent-config-file-file-managed:
     - source: {{ files_switch(['subcomponent-example.tmpl'],
                               lookup='powershell-7-subcomponent-config-file-file-managed',
                               use_subpath=True
-                 )
+                  )
               }}
     - mode: 644
     - user: root

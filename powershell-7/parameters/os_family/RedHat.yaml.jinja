@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+#
+# Set values specific to:
+#   salt['config.get']('os_family') == RedHat.
+#
+# You just need to add the key:values for this `os_family` that differ
+# from `defaults.yaml` + `<osarch>.yaml`.
+#
+# If you do not need to provide defaults via the `os_family` config,
+# you can remove this file or provide at least an empty dict, e.g.
+# values: {}
+---
+values:
+  pkg:
+    download_sig: ''
+    download_uri: ''
+    install_root: '/opt/microsoft/powershell/7'
+    name: 'powershell'
+  config:
+    repo_rpm_name: 'packages-microsoft-prod'
+    {%- if salt['grains.get']('osmajorrelease') | int == 8 %}
+    repo_rpm_uri: 'https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm'
+    {%- elif salt['grains.get']('osmajorrelease') | int == 9 %}
+    repo_rpm_uri: 'https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm'
+    {%- else %}
+    repository_uri: ''
+    {%- endif %}
+...
