@@ -102,7 +102,7 @@ Manage PowerShell Client Configuration File:
     - name: '{{ config_target }}'
     - require:
       - sls: {{ sls_package_install }}
-    - source: '{{ files_switch(src_list, lookup=lookup_id) }}'
+    - source: {{ files_switch(src_list, lookup=lookup_id) }}
     - template: 'jinja'
 
 Register PowerShell as Valid System Shell:
