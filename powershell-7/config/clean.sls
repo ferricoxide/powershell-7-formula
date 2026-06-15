@@ -8,9 +8,9 @@
 
 include:
 {%- if grains.kernel == "Linux" %}
-  - postman-api.config.lin_clean
+  - powershell-7.config.lin_clean
 {%- elif grains.kernel == "Windows" %}
-  - postman-api.config.win_clean
+  - powershell-7.config.win_clean
 {%- endif %}
 
 Avoid being a null-router (config/clean) - PowerShell 7:

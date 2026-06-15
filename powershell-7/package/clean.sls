@@ -8,9 +8,11 @@
 
 include:
   - {{ sls_config_clean }}
+{%- if grains.kernel == "Linux" %}
+  - powershell-7.package.lin_clean
+{%- elif grains.kernel == "Windows" %}
+  - powershell-7.package.win_clean
+{%- endif %}
 
-powershell-7-package-clean-pkg-removed:
-  pkg.removed:
-    - name: {{ powershell_7.pkg.name }}
-    - require:
-      - sls: {{ sls_config_clean }}
+Avoid being a null-router (package/clean) - Powershell 7:
+  test.nop: []
