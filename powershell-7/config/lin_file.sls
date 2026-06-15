@@ -65,6 +65,33 @@ Recompile fapolicyd Rules Engine:
 
 {%- endif %}
 
+Configure OpenSSH PowerShell Subsystem Dropin:
+  file.managed:
+    - contents: |
+        Subsystem powershell {{ shell_path }} -sshs -NoLogo -NoProfile
+    - group: 'root'
+    - mode: '0600'
+    - name: '/etc/ssh/sshd_config.d/40-powershell.conf'
+    - user: 'root'
+
+Ensure System Wide Module Directory Baseline:
+  file.directory:
+    - dir_mode: '0755'
+    - group: 'root'
+    - makedirs: 'True'
+    - name: '{{ base_root }}/Modules'
+    - user: 'root'
+
+Manage Global PowerShell Shell Environment:
+  file.managed:
+    - group: 'root'
+    - mode: '0644'
+    - name: '{{ base_root }}/profile.ps1'
+    - require:
+      - sls: {{ sls_package_install }}
+    - source: 'salt://{{ tplroot }}/files/default/profile.ps1'
+    - user: 'root'
+
 Manage PowerShell Client Configuration File:
   file.managed:
     - context:
