@@ -16,8 +16,8 @@
         default('packages-microsoft-prod', true)
 %}
 
-{%- if powershell_download_uri and not
-       powershell_download_uri.endswith('.rpm')
+{%- if  powershell_download_uri and not
+        powershell_download_uri.endswith('.rpm')
 %}
 
 Remove PowerShell Custom Installation Tree:

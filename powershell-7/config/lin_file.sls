@@ -27,8 +27,8 @@ include:
         ) else '/usr/bin/pwsh'
 %}
 
-{%- if powershell_download_uri and not
-       powershell_download_uri.endswith('.rpm')
+{%- if  powershell_download_uri and not
+        powershell_download_uri.endswith('.rpm')
 %}
 
 Allow PowerShell in fapolicyd:

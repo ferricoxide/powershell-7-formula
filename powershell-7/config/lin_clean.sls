@@ -37,8 +37,8 @@ Remove PowerShell Skeleton Configuration Directory:
   file.absent:
     - name: '/etc/skel/.config/powershell'
 
-{%- if powershell_download_uri and not
-       powershell_download_uri.endswith('.rpm')
+{%- if  powershell_download_uri and not
+        powershell_download_uri.endswith('.rpm')
 %}
 
 Remove PowerShell Fapolicyd Rules File:

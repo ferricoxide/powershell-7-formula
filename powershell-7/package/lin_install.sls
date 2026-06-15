@@ -25,8 +25,8 @@
       default('powershell', true)
 %}
 
-{%- if powershell_download_uri and not
-       powershell_download_uri.endswith('.rpm') %}
+{%- if  powershell_download_uri and not
+        powershell_download_uri.endswith('.rpm') %}
 {%- set path_accumulator = [] %}
 
 Ensure Executable Permission on Core Binaries:
