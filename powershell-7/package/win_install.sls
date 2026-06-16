@@ -24,14 +24,8 @@ Extract PowerShell from Zip Archive:
 
 {%- else %}
 
-Install PowerShell via MSI:
+Install PowerShell via Winrepo Package Manager:
   pkg.installed:
-    {%- if powershell_download_uri and powershell_download_uri.endswith('.msi') %}
-    - skip_verify: True
-    - sources:
-      - '{{ powershell_package_name }}': '{{ powershell_download_uri }}'
-    {%- else %}
     - name: '{{ powershell_package_name }}'
-    {%- endif %}
 
 {%- endif %}
