@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+#
+# Set values specific to:
+#   salt['config.get']('os_family') == Windows.
+---
+values:
+  pkg:
+    download_sig: ''
+    download_uri: ''
+    install_root: 'C:/Program Files/PowerShell/7'
+    name: 'PowerShell'
+...
