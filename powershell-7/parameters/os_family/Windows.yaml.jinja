@@ -7,7 +7,9 @@
 values:
   pkg:
     download_sig: ''
-    download_uri: ''
+    version: '7.6.2'
+    {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64' else 'x86' %}
+    download_uri: 'https://github.com/PowerShell/PowerShell/releases/download/v7.6.2/PowerShell-7.6.2-win-{{ arch }}.msi'
     install_root: 'C:/Program Files/PowerShell/7'
     name: 'PowerShell'
 ...
