@@ -9,7 +9,6 @@ values:
     download_uri: ''
     install_root: ''
     name: ''
-    version: ''
   config:
     repo_rpm_name: ''
     repo_rpm_uri: ''

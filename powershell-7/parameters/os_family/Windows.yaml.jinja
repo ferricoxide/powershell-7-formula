@@ -4,13 +4,12 @@
 # Set values specific to:
 #   salt['config.get']('os_family') == Windows.
 
-{%- set version = '7.6.2' %}
+{%- set version = '7.6.3' %}
 {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64' else 'x86' %}
 ---
 values:
   pkg:
     download_sig: ''
-    version: '{{ version }}'
     download_uri: 'https://github.com/PowerShell/PowerShell/releases/download/v{{ version }}/PowerShell-{{ version }}-win-{{ arch }}.msi'
     install_root: 'C:/Program Files/PowerShell/7'
     name: 'PowerShell'
