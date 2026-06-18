@@ -19,13 +19,20 @@
 {%- set greeting = theme_map.get('greeting', '') %}
 {%- set prefix = theme_map.get('prefix', '') %}
 
-{%- set has_theme = bg_color or fg_color or greeting or prefix %}
-
 # Standardize path environments to keep lines safely under 80 columns
 {%- set target_binary = base_root ~ '/pwsh.exe' %}
 {%- set public_desktop = 'C:/Users/Public/Desktop' %}
 {%- set public_start_menu =
         'C:/ProgramData/Microsoft/Windows/Start Menu/Programs' %}
+{%- set env_reg = 'HKLM\SYSTEM\CurrentControlSet\Control\' ~
+        'Session Manager\Environment' %}
+
+Disable Powershell Seven Startup Update Notifications:
+  reg.present:
+    - name: '{{ env_reg }}'
+    - vdata: 'Off'
+    - vname: 'POWERSHELL_UPDATECHECK'
+    - vtype: 'REG_SZ'
 
 Ensure Global Profile Directory Exists:
   file.directory:
@@ -58,68 +65,79 @@ Manage Desktop Launcher Shortcut:
     - target: '{{ target_binary }}'
     - working_dir: '{{ base_root }}'
 
-{%- if has_theme %}
-  {%- set profile_content = [] %}
-  {%- set comment_str = '# Managed by SaltStack - ' ~
-          'Corporate Theme Customization' %}
-  {%- do profile_content.append(comment_str) %}
-  {%- if bg_color or fg_color %}
-    {%- do profile_content.append("if ($Host.Name -eq 'ConsoleHost') {") %}
-    {%- do profile_content.append('    try {') %}
-    {%- if bg_color %}
-      {%- set bg_line = "        $Host.UI.RawUI.BackgroundColor = '" ~
-              bg_color ~ "'" %}
-      {%- do profile_content.append(bg_line) %}
-    {%- endif %}
-    {%- if fg_color %}
-      {%- set fg_line = "        $Host.UI.RawUI.ForegroundColor = '" ~
-              fg_color ~ "'" %}
-      {%- do profile_content.append(fg_line) %}
-    {%- endif %}
-    {%- do profile_content.append('        Clear-Host') %}
-    {%- do profile_content.append('    } catch {}') %}
-    {%- do profile_content.append('}') %}
+{%- set profile_content = [] %}
+{%- set comment_str = '# Managed by SaltStack - ' ~
+        'Enterprise User Presets' %}
+{%- do profile_content.append(comment_str) %}
+{%- set psrl_check = 'if (Get-Module -ListAvailable ' ~
+        'PSReadLine) {' %}
+{%- do profile_content.append(psrl_check) %}
+{%- set psrl_opt1 = '    Set-PSReadLineOption ' ~
+        '-PredictionSource History' %}
+{%- do profile_content.append(psrl_opt1) %}
+{%- set psrl_opt2 = '    Set-PSReadLineOption ' ~
+        '-PredictionViewStyle InlineView' %}
+{%- do profile_content.append(psrl_opt2) %}
+{%- do profile_content.append('}') %}
+{%- if bg_color or fg_color %}
+  {%- do profile_content.append('') %}
+  {%- do profile_content.append("if ($Host.Name -eq 'ConsoleHost') {") %}
+  {%- do profile_content.append('    try {') %}
+  {%- if bg_color %}
+    {%- set bg_line = "        $Host.UI.RawUI.BackgroundColor = '" ~
+            bg_color ~ "'" %}
+    {%- do profile_content.append(bg_line) %}
   {%- endif %}
-  {%- if greeting %}
-    {%- set greeting_cmd = 'Write-Host "' ~ greeting ~ '"' %}
+  {%- if fg_color %}
+    {%- set fg_line = "        $Host.UI.RawUI.ForegroundColor = '" ~
+            fg_color ~ "'" %}
+    {%- do profile_content.append(fg_line) %}
+  {%- endif %}
+  {%- do profile_content.append('        Clear-Host') %}
+  {%- do profile_content.append('    } catch {}') %}
+  {%- do profile_content.append('}') %}
+{%- endif %}
+{%- if greeting %}
+  {%- do profile_content.append('') %}
+  {%- set greeting_cmd = 'Write-Host "' ~ greeting ~ '"' %}
+  {%- if fg_color %}
+    {%- set greeting_cmd = greeting_cmd ~
+            ' -ForegroundColor ' ~ fg_color %}
+  {%- endif %}
+  {%- if bg_color %}
+    {%- set greeting_cmd = greeting_cmd ~
+            ' -BackgroundColor ' ~ bg_color %}
+  {%- endif %}
+  {%- do profile_content.append(greeting_cmd) %}
+{%- endif %}
+{%- if prefix or fg_color or bg_color %}
+  {%- do profile_content.append('') %}
+  {%- do profile_content.append('function prompt {') %}
+  {%- if prefix %}
+    {%- set prompt_cmd = '    Write-Host "' ~ prefix ~
+            ' " -NoNewline' %}
     {%- if fg_color %}
-      {%- set greeting_cmd = greeting_cmd ~
+      {%- set prompt_cmd = prompt_cmd ~
               ' -ForegroundColor ' ~ fg_color %}
     {%- endif %}
     {%- if bg_color %}
-      {%- set greeting_cmd = greeting_cmd ~
+      {%- set prompt_cmd = prompt_cmd ~
               ' -BackgroundColor ' ~ bg_color %}
     {%- endif %}
-    {%- do profile_content.append(greeting_cmd) %}
+    {%- do profile_content.append(prompt_cmd) %}
   {%- endif %}
-  {%- if prefix or fg_color or bg_color %}
-    {%- do profile_content.append('') %}
-    {%- do profile_content.append('function prompt {') %}
-    {%- if prefix %}
-      {%- set prompt_cmd = '    Write-Host "' ~ prefix ~
-              ' " -NoNewline' %}
-      {%- if fg_color %}
-        {%- set prompt_cmd = prompt_cmd ~
-                ' -ForegroundColor ' ~ fg_color %}
-      {%- endif %}
-      {%- if bg_color %}
-        {%- set prompt_cmd = prompt_cmd ~
-                ' -BackgroundColor ' ~ bg_color %}
-      {%- endif %}
-      {%- do profile_content.append(prompt_cmd) %}
-    {%- endif %}
-    {%- set loc_line = '    Write-Host ' ~
-            '(Get-Location) -NoNewline' %}
-    {%- if not prefix and fg_color %}
-      {%- set loc_line = loc_line ~ ' -ForegroundColor ' ~ fg_color %}
-    {%- endif %}
-    {%- if not prefix and bg_color %}
-      {%- set loc_line = loc_line ~ ' -BackgroundColor ' ~ bg_color %}
-    {%- endif %}
-    {%- do profile_content.append(loc_line) %}
-    {%- do profile_content.append('    return "> "') %}
-    {%- do profile_content.append('}') %}
+  {%- set loc_line = '    Write-Host ' ~
+          '(Get-Location) -NoNewline' %}
+  {%- if not prefix and fg_color %}
+    {%- set loc_line = loc_line ~ ' -ForegroundColor ' ~ fg_color %}
   {%- endif %}
+  {%- if not prefix and bg_color %}
+    {%- set loc_line = loc_line ~ ' -BackgroundColor ' ~ bg_color %}
+  {%- endif %}
+  {%- do profile_content.append(loc_line) %}
+  {%- do profile_content.append('    return "> "') %}
+  {%- do profile_content.append('}') %}
+{%- endif %}
 
 Manage Global Enterprise Powershell Profile Script:
   file.managed:
@@ -129,8 +147,6 @@ Manage Global Enterprise Powershell Profile Script:
     - name: '{{ base_root }}/Microsoft.PowerShell_profile.ps1'
     - require:
       - file: 'Ensure Global Profile Directory Exists'
-
-{%- endif %}
 
 {%- if is_zip %}
 
