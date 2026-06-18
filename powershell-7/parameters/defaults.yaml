@@ -4,12 +4,17 @@
 # Set default values.
 ---
 values:
+  config:
+    repo_rpm_name: ''
+    repo_rpm_uri: ''
+    theme:
+      bg_color: ''
+      fg_color: ''
+      greeting: ''
+      prefix: ''
   pkg:
     download_sig: ''
     download_uri: ''
     install_root: ''
     name: ''
-  config:
-    repo_rpm_name: ''
-    repo_rpm_uri: ''
 ...
