@@ -4,13 +4,14 @@
 {%- set tplroot = tpldir.split('/')[0] %}
 {%- from tplroot ~ "/map.jinja" import mapdata as powershell_7 with context %}
 {%- set pkg_map = powershell_7.get('pkg') or {} %}
+
+# Extract configuration parameters directly from the clean map stack
 {%- set full_name_override = pkg_map.get('full_name') %}
 {%- set pkg_name = pkg_map.get('name', 'PowerShell') %}
 {%- set powershell_download_uri = pkg_map.get('download_uri') %}
 {%- set powershell_version = pkg_map.get('version') %}
 
-{#- Compute "latest-available" from GitHub lookup if download_uri is
-    empty/nulled in parameters #}
+# Execute a GitHub lookup if "download_uri" parameter is empty/nulled,
 {%- if not powershell_download_uri %}
   {%- set api_url = 'https://api.github.com/repos/' ~
       'PowerShell/PowerShell/releases/latest' %}
@@ -30,34 +31,43 @@
   {%- endif %}
 {%- endif %}
 
-{%- set is_zip = powershell_download_uri.endswith('.zip') if
-        powershell_download_uri else False %}
-
-{%- if not is_zip %}
-
-  {%- set winrepo_local_dir = salt['config.get'](
-      'winrepo_dir',
-      'C:/Watchmaker/Salt/srv/winrepo/winrepo'
-  ) %}
-  {%- set winrepo_file = winrepo_local_dir ~ '/' ~
-    pkg_name | lower ~ '.sls' %}
-
-  {#- Winrepo wants 4-part version-string for package-db #}
-  {%- set win_version = powershell_version ~ '.0' if
-      powershell_version.count('.') < 3 else powershell_version %}
-
-  {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64' else 'x86' %}
-  {%- set major_version = powershell_version.split('.')[0] if
-          powershell_version else '7' %}
-  {%- set default_full_name = 'PowerShell ' ~ major_version ~ '-' ~ arch %}
-  {%- set full_name = full_name_override if full_name_override else
-          default_full_name %}
-
 Compile Local Winrepo Database:
   module.run:
     - name: winrepo.genrepo
     - onchanges:
       - file: 'Manage Powershell Winrepo Definition File'
+
+{%- if powershell_download_uri and not powershell_version %}
+
+Enforce Explicit Version Contract:
+  test.fail_without_changes:
+    - name: 'Pillar configuration missing required "version" attribute!'
+
+{%- else %}
+
+  {%- set is_zip = powershell_download_uri.endswith('.zip') if
+          powershell_download_uri else False %}
+
+  {%- if not is_zip %}
+
+    {%- set winrepo_local_dir = salt['config.get'](
+        'winrepo_dir',
+        'C:/Watchmaker/Salt/srv/winrepo/winrepo'
+    ) %}
+    {%- set winrepo_file = winrepo_local_dir ~ '/' ~
+            pkg_name | lower ~ '.sls' %}
+
+    # Winrepo wants 4-part version-string
+    {%- set win_version = powershell_version ~ '.0' if
+            powershell_version.count('.') < 3 else powershell_version %}
+
+    # Use machine grains to compute display attributes
+    {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64' else 'x86' %}
+    {%- set major_version = powershell_version.split('.')[0] if
+            powershell_version else '7' %}
+    {%- set default_full_name = 'PowerShell ' ~ major_version ~ '-' ~ arch %}
+    {%- set full_name = full_name_override if full_name_override else
+            default_full_name %}
 
 Ensure Local Winrepo Directory Exists:
   file.directory:
@@ -85,9 +95,8 @@ Refresh Minion Package Manager Database Cache:
     - onchanges:
       - module: 'Compile Local Winrepo Database'
 
-{%- else %}
-
+  {%- else %}
 Skip Winrepo Definition For Zip Deployment:
   test.nop: []
-
+  {%- endif %}
 {%- endif %}
