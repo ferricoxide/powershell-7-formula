@@ -59,28 +59,46 @@ Manage Desktop Launcher Shortcut:
     - working_dir: '{{ base_root }}'
 
 {%- if has_theme %}
+  {%- set profile_content = [] %}
+  {%- set comment_str = '# Managed by SaltStack - ' ~
+          'Corporate Theme Customization' %}
+  {%- do profile_content.append(comment_str) %}
+  {%- if greeting %}
+    {%- set greeting_cmd = 'Write-Host "' ~ greeting ~ '"' %}
+    {%- if fg_color %}
+      {%- set greeting_cmd = greeting_cmd ~
+              ' -ForegroundColor ' ~ fg_color %}
+    {%- endif %}
+    {%- if bg_color %}
+      {%- set greeting_cmd = greeting_cmd ~
+              ' -BackgroundColor ' ~ bg_color %}
+    {%- endif %}
+    {%- do profile_content.append(greeting_cmd) %}
+  {%- endif %}
+  {%- if prefix or fg_color or bg_color %}
+    {%- do profile_content.append('') %}
+    {%- do profile_content.append('function prompt {') %}
+    {%- if prefix %}
+      {%- set prompt_cmd = '    Write-Host "' ~ prefix ~ ' " -NoNewline' %}
+      {%- if fg_color %}
+        {%- set prompt_cmd = prompt_cmd ~
+                ' -ForegroundColor ' ~ fg_color %}
+      {%- endif %}
+      {%- if bg_color %}
+        {%- set prompt_cmd = prompt_cmd ~
+                ' -BackgroundColor ' ~ bg_color %}
+      {%- endif %}
+      {%- do profile_content.append(prompt_cmd) %}
+    {%- endif %}
+    {%- do profile_content.append('    Write-Host (Get-Location) -NoNewline') %}
+    {%- do profile_content.append('    return "> "') %}
+    {%- do profile_content.append('}') %}
+  {%- endif %}
 
 Manage Global Enterprise Powershell Profile Script:
   file.managed:
     - contents: |
-        # Managed by SaltStack - Corporate Theme Customization
-        {%- if greeting %}
-        Write-Host "{{ greeting }}" `
-            {%- if fg_color %} -ForegroundColor {{ fg_color }}{% endif %} `
-            {%- if bg_color %} -BackgroundColor {{ bg_color }}{% endif %}
-        {%- endif %}
-        {%- if prefix or fg_color or bg_color %}
-
-        function prompt {
-            {%- if prefix %}
-            Write-Host "{{ prefix }} " -NoNewline `
-                {%- if fg_color %} -ForegroundColor {{ fg_color }}{% endif %} `
-                {%- if bg_color %} -BackgroundColor {{ bg_color }}{% endif %}
-            {%- endif %}
-            Write-Host (Get-Location) -NoNewline
-            return "> "
-        }
-        {%- endif %}
+{{ profile_content | join('\n') | indent(8, true) }}
     - makedirs: True
     - name: '{{ base_root }}/Microsoft.PowerShell_profile.ps1'
     - require:
