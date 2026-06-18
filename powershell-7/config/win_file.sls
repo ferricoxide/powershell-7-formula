@@ -63,6 +63,23 @@ Manage Desktop Launcher Shortcut:
   {%- set comment_str = '# Managed by SaltStack - ' ~
           'Corporate Theme Customization' %}
   {%- do profile_content.append(comment_str) %}
+  {%- if bg_color or fg_color %}
+    {%- do profile_content.append("if ($Host.Name -eq 'ConsoleHost') {") %}
+    {%- do profile_content.append('    try {') %}
+    {%- if bg_color %}
+      {%- set bg_line = "        $Host.UI.RawUI.BackgroundColor = '" ~
+              bg_color ~ "'" %}
+      {%- do profile_content.append(bg_line) %}
+    {%- endif %}
+    {%- if fg_color %}
+      {%- set fg_line = "        $Host.UI.RawUI.ForegroundColor = '" ~
+              fg_color ~ "'" %}
+      {%- do profile_content.append(fg_line) %}
+    {%- endif %}
+    {%- do profile_content.append('        Clear-Host') %}
+    {%- do profile_content.append('    } catch {}') %}
+    {%- do profile_content.append('}') %}
+  {%- endif %}
   {%- if greeting %}
     {%- set greeting_cmd = 'Write-Host "' ~ greeting ~ '"' %}
     {%- if fg_color %}
@@ -79,7 +96,8 @@ Manage Desktop Launcher Shortcut:
     {%- do profile_content.append('') %}
     {%- do profile_content.append('function prompt {') %}
     {%- if prefix %}
-      {%- set prompt_cmd = '    Write-Host "' ~ prefix ~ ' " -NoNewline' %}
+      {%- set prompt_cmd = '    Write-Host "' ~ prefix ~
+              ' " -NoNewline' %}
       {%- if fg_color %}
         {%- set prompt_cmd = prompt_cmd ~
                 ' -ForegroundColor ' ~ fg_color %}
@@ -90,7 +108,15 @@ Manage Desktop Launcher Shortcut:
       {%- endif %}
       {%- do profile_content.append(prompt_cmd) %}
     {%- endif %}
-    {%- do profile_content.append('    Write-Host (Get-Location) -NoNewline') %}
+    {%- set loc_line = '    Write-Host ' ~
+            '(Get-Location) -NoNewline' %}
+    {%- if not prefix and fg_color %}
+      {%- set loc_line = loc_line ~ ' -ForegroundColor ' ~ fg_color %}
+    {%- endif %}
+    {%- if not prefix and bg_color %}
+      {%- set loc_line = loc_line ~ ' -BackgroundColor ' ~ bg_color %}
+    {%- endif %}
+    {%- do profile_content.append(loc_line) %}
     {%- do profile_content.append('    return "> "') %}
     {%- do profile_content.append('}') %}
   {%- endif %}
