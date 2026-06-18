@@ -24,8 +24,8 @@
 {%- set public_desktop = 'C:/Users/Public/Desktop' %}
 {%- set public_start_menu =
         'C:/ProgramData/Microsoft/Windows/Start Menu/Programs' %}
-{%- set env_reg = 'HKLM\SYSTEM\CurrentControlSet\Control\\' ~
-        'Session Manager\Environment' %}
+{%- set env_reg = 'HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\' ~
+        'Control\\Session Manager\\Environment' %}
 
 Disable Powershell Seven Startup Update Notifications:
   reg.present:
