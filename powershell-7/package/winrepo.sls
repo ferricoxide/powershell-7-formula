@@ -4,51 +4,90 @@
 {%- set tplroot = tpldir.split('/')[0] %}
 {%- from tplroot ~ "/map.jinja" import mapdata as powershell_7 with context %}
 {%- set pkg_map = powershell_7.get('pkg') or {} %}
-{%- set dl_uri = pkg_map.get('download_uri') %}
+{%- set full_name_override = pkg_map.get('full_name') %}
 {%- set pkg_name = pkg_map.get('name', 'PowerShell') %}
-{%- set version = pkg_map.get('version') %}
-{%- set full_name = pkg_map.get('full_name', 'PowerShell 7-x64') %}
+{%- set powershell_download_uri = pkg_map.get('download_uri') %}
+{%- set powershell_version = pkg_map.get('version') %}
 
-{%- if not dl_uri or not dl_uri.endswith('.zip') %}
-  {%- set winrepo_local_dir = salt['config.get']('winrepo_dir',
-      'C:\\Watchmaker\\Salt\\srv\\winrepo\\winrepo') %}
-  {%- set winrepo_file = winrepo_local_dir ~ '/' ~ pkg_name | lower ~ '.sls' %}
+{#- Compute "latest-available" from GitHub lookup if download_uri is
+    empty/nulled in parameters #}
+{%- if not powershell_download_uri %}
+  {%- set api_url = 'https://api.github.com/repos/' ~
+      'PowerShell/PowerShell/releases/latest' %}
+  {%- set api_res = salt['http.query'](
+      api_url,
+      decode=True,
+      decode_type='json'
+  ) %}
+  {%- if 'dict' in api_res and 'tag_name' in api_res['dict'] %}
+    {%- set latest_tag = api_res['dict']['tag_name'] %}
+    {%- set powershell_version = latest_tag | replace('v', '') %}
+    {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64'
+        else 'x86' %}
+    {%- set powershell_download_uri = 'https://github.com/' ~
+        'PowerShell/PowerShell/releases/download/' ~ latest_tag ~
+        '/PowerShell-' ~ powershell_version ~ '-win-' ~ arch ~ '.msi' %}
+  {%- endif %}
+{%- endif %}
 
-Compile local winrepo database:
+{%- set is_zip = powershell_download_uri.endswith('.zip') if
+        powershell_download_uri else False %}
+
+{%- if not is_zip %}
+
+  {%- set winrepo_local_dir = salt['config.get'](
+      'winrepo_dir',
+      'C:/Watchmaker/Salt/srv/winrepo/winrepo'
+  ) %}
+  {%- set winrepo_file = winrepo_local_dir ~ '/' ~
+    pkg_name | lower ~ '.sls' %}
+
+  {#- Winrepo wants 4-part version-string for package-db #}
+  {%- set win_version = powershell_version ~ '.0' if
+      powershell_version.count('.') < 3 else powershell_version %}
+
+  {%- set arch = 'x64' if salt['grains.get']('cpuarch') == 'AMD64' else 'x86' %}
+  {%- set major_version = powershell_version.split('.')[0] if
+          powershell_version else '7' %}
+  {%- set default_full_name = 'PowerShell ' ~ major_version ~ '-' ~ arch %}
+  {%- set full_name = full_name_override if full_name_override else
+          default_full_name %}
+
+Compile Local Winrepo Database:
   module.run:
     - name: winrepo.genrepo
     - onchanges:
-      - file: 'Manage PowerShell winrepo definition file'
+      - file: 'Manage Powershell Winrepo Definition File'
 
-Ensure local winrepo directory exists:
+Ensure Local Winrepo Directory Exists:
   file.directory:
+    - makedirs: True
     - name: '{{ winrepo_local_dir }}'
-    - makedirs: True
 
-Manage PowerShell winrepo definition file:
+Manage Powershell Winrepo Definition File:
   file.managed:
-    - name: '{{ winrepo_file }}'
-    - makedirs: True
-    - require:
-      - file: 'Ensure local winrepo directory exists'
     - contents: |
         {{ pkg_name }}:
-          '{{ version }}.0':
+          '{{ win_version }}':
             full_name: '{{ full_name }}'
             install_flags: '/qn /norestart'
-            installer: '{{ dl_uri }}'
+            installer: '{{ powershell_download_uri }}'
             msiexec: true
             uninstall_flags: '/qn /norestart'
+    - makedirs: True
+    - name: '{{ winrepo_file }}'
+    - require:
+      - file: 'Ensure Local Winrepo Directory Exists'
 
-Refresh minion package manager database cache:
+Refresh Minion Package Manager Database Cache:
   module.run:
     - name: pkg.refresh_db
     - onchanges:
-      - module: 'Compile local winrepo database'
+      - module: 'Compile Local Winrepo Database'
 
-{% else %}
+{%- else %}
 
-Skip winrepo definition for ZIP deployment:
+Skip Winrepo Definition For Zip Deployment:
   test.nop: []
 
-{% endif %}
+{%- endif %}
