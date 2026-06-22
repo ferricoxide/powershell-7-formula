@@ -55,6 +55,45 @@ Preliminary testing was performed on a STIG-hardened installation-target with FI
 
 ### Windows
 
+The Windows-portion of this formula supports the use of either ZIP- or MSI-based installation. If no override-arguments are given via Pillar, the formula will attempt to identify, download and install from the GitHub-hosted MSI file. Pillar-data can be used to:
+* Select a specific 7.x.y version to install
+* Select the use of a ZIP-based installation-method
+* Download from a custom repository (e.g., an installation-archive hosted in S3)
+
+This formula will attempt to install [winrepo](https://docs.saltproject.io/en/latest/topics/windows/windows-package-manager.html) definitions for PowerShell 7.X if the MSI-based installation-method is used. When this formula is run via a userData payload, the various SaltStack content, like the winrepo, will be owned by the SYSTEM-user context. If attempting to run the "clean" states, the interactive user will typically operate under a different scope. This will frequently cause the winrepo portion of the "clean" routines to fail. Logged output will be similar to:
+
+> ```yaml
+> [ERROR   ] Module function winrepo.genrepo threw an exception. Exception: [Errno 13] Permission denied: 'C:\\Watchmaker\\Salt\\srv\\
+> winrepo\\winrepo\\winrepo.p'
+> local:
+> ----------
+> [...ELIDED...]
+> ----------
+>           ID: Compile Local Winrepo Database After Deletion
+>     Function: module.run
+>         Name: winrepo.genrepo
+>       Result: False
+>      Comment: Module function winrepo.genrepo threw an exception. Exception: [Errno 13] Permission denied: 'C:\\Watchmaker\\Salt\\sr
+> v\\winrepo\\winrepo\\winrepo.p'
+>      Started: 15:56:45.448565
+>     Duration: 252.323 ms
+>      Changes:
+> ----------
+>           ID: Refresh Minion Package Manager Database Cache After Deletion
+>     Function: module.run
+>         Name: pkg.refresh_db
+>       Result: False
+>      Comment: One or more requisite failed: powershell-7.package.win_clean.Compile Local Winrepo Database After Deletion
+>      Started: 15:56:45.700888
+>     Duration: 0.0 ms
+>      Changes:
+> ----------
+> [...ELIDED...]
+> ----------
+> ```
+
+The `[Errno 13] Permission denied` should also show up in the Watchmaker and SaltStack log-files.
+
 
 [^1]: As of this README's writing, only Enterprise Linux and related distros (Red Hat and Oracle Enterprise, CentOS Stream, Rocky and Alma Linux) are supported. It has only been specifically tested with EL **_9_** variants.
 [^2]: As of this README's writing, this functionality has only been tested on Windows Server 2022

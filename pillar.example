@@ -4,46 +4,77 @@
 # ==============================================================================
 # PowerShell 7 Formula Pillar Configuration Example
 # ==============================================================================
-# This file demonstrates the available parameters for customizing the lookup
-# dictionary used by the formula states on target environments.
+# This file maps the parameters available to customize the target engine
+# environment lookup configurations on destination minions.
 # ==============================================================================
 
 powershell-7:
-  # ----------------------------------------------------------------------------
-  # Custom lookup key parameters (corresponds to map.jinja lookup data)
-  # ----------------------------------------------------------------------------
   lookup:
-    config:
-      # The package identifier name for the vendor repository definition RPM.
-      # Default on RedHat families is 'packages-microsoft-prod'.
-      repo_rpm_name: 'packages-microsoft-prod'
 
-      # The exact location URI to fetch the repository definition RPM.
-      # Defaults dynamically based on major OS version (RHEL 8 vs RHEL 9).
+    # ==========================================================================
+    # A. CORE ENVIRONMENT POLICY DIRECTIVES (config)
+    # ==========================================================================
+    config:
+
+      # --- Linux-Specific Parameters ------------------------------------------
+      # Explicit vendor repository registration controls for RedHat families.
+      repo_rpm_name: 'packages-microsoft-prod'
       repo_rpm_uri: 'https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm'
 
+      # --- Windows-Specific Parameters ----------------------------------------
+      # Context-Aware Hardening Enforcement: Controls standalone security policy
+      # injection. Set to false to avoid baseline policy drift or concurrent
+      # execution friction with active 'ash-windows' highstate frameworks.
+      enforce_hardening: true
+
+      # Shared Organizational Profile Theme Customizations: Modifies console
+      # colors and startup tracking indicators inside the managed profile script.
+      theme:
+        bg_color: 'DarkBlue'
+        fg_color: 'White'
+        greeting: 'Welcome to the Secure Enterprise Console Environment.'
+        prefix: '[SECURE-NODE]'
+
+
+    # ==========================================================================
+    # B. CORE PACKAGING & PACKAGE-MANAGER DIRECTIVES (pkg)
+    # ==========================================================================
     pkg:
-      # Optional cryptographic checksum hash used to validate archive binary
-      # extractions. Mandatory if enforcement verification is requested.
+
+      # --- Dual-Platform Parameters (Shared Keys, Divergent Expectations) ----
       #
-      # To generate a suitable signature for packages downloaded using the
-      # `download_uri` parameter, you can execute something like:
-      #
-      #   curl ${download_uri} | sha256sum | awk '{ print "sha256=" $1 }'
+      # 1. 'name': System Package Registry Identifier
+      #    - Linux: Matches standard yum/dnf package name mapping ('powershell').
+      #    - Windows: Matches the Appx/MSI display registry key ('PowerShell').
+      name: 'PowerShell'
+
+      # 2. 'install_root': Core System Target Execution Path ($PSHOME)
+      #    - Linux Default: '/opt/microsoft/powershell/7'
+      #    - Windows Default: 'C:/Program Files/PowerShell/7'
+      install_root: 'C:/Program Files/PowerShell/7'
+
+      # 3. 'download_uri': Target Remote Asset Retrieval Path
+      #    - Shared Behavior: Leave empty to leverage native repos (Linux dnf/
+      #      yum). Provide a direct path to implement detached source extraction.
+      #    - Linux Formats: Target local/remote '.rpm' or '.tar.gz' archives.
+      #    - Windows Formats: Target remote '.msi' or manual '.zip' files.
+      download_uri: 'https://github.com/PowerShell/PowerShell/releases/download/v7.6.3/PowerShell-7.6.3-win-x64.msi'
+
+      # 4. 'download_sig': Cryptographic Integrity Hash
+      #    - Shared Behavior: Mandatory for validating archive signature checks
+      #      when performing manual '.tar.gz' or '.zip' decoupled extractions.
       download_sig: 'sha256=a8a05aa19fb681468d6d884202336eae0af17b882731d173cf89a30a3d9b7c40'
 
-      # The retrieval pathway for the engine installer.
-      # - Leave blank to use native system package repositories.
-      # - Provide a path ending in '.rpm' to perform a direct local package installation.
-      # - Provide a path ending in '.tar.gz' to trigger custom decoupled extraction.
-      download_uri: 'https://github.com/PowerShell/PowerShell/releases/download/v7.6.2/powershell-7.6.2-linux-x64.tar.gz'
 
-      # The absolute home path folder directory target root ($PSHOME) where
-      # the shell binary stack and module layouts reside.
-      # Default on RedHat families is '/opt/microsoft/powershell/7'.
-      install_root: '/apps/microsoft/powershell/7.6.2'
+      # --- Windows-Specific Winrepo Parameters --------------------------------
+      # These elements are exclusively required when orchestrating local Windows
+      # Software Repository (winrepo) MSI definitions to support clean local
+      # database compilation loops.
+      #
+      # 'version': The strict 3-part or 4-part destination software contract
+      # version. Requisite condition when 'download_uri' points to an MSI path.
+      version: '7.6.3'
 
-      # The local system package engine name identifier when fetching via
-      # package management tools (e.g., yum/dnf/msiexec).
-      # Default on RedHat families is 'powershell'.
-      name: 'powershell'
+      # 'full_name': Explicitly overrides the winrepo database DisplayName match
+      # sequence string to align with custom enterprise corporate gold masters.
+      full_name: 'PowerShell 7-x64'
