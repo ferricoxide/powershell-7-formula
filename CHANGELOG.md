@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### 0.1.1
+
+**Released**: 2026.06.22
+
+**Summary**:
+
+*   Added Windows Server functionality
+    *   Installs the Powershell 7.x binaries from either MSI- or ZIP-based installer. Default is the latest-available, MSI-based installer found on [GitHub](https://github.com/PowerShell/PowerShell/releases/)
+    *   If installing from the ZIP-based installer:
+        *   Install-location defaults to `C:/Program Files/PowerShell/7`
+        *   Install-location overrideable via Pillar's `install_root` parameter
+        *   For Windows Server (and related OSes), latest installable version, as of this writing, is 7.6.3 (override via Pillar's `download_uri` parameter). See previously-linked "Releases" page for changes since this document was updated
+    *   Ensures a desktop-shortcut exists for all users
+    *   Ensures a "Start" menu shortcut exists for all users
+    *   Enables formula-user to specify banner- and theming-information (see `pillar.example` file for guidance)
+    *   Implements "cleanup" for all of the preceeding
+*   Adds pillar.example to explain parameters/inputs that may be specified via Pillar
+*   Update README with platform-notes
+
 ### 0.1.0
 
 **Released**: 2026.06.15
