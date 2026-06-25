@@ -64,8 +64,8 @@ Enforce Explicit Version Contract:
             default_full_name %}
 
 Compile Local Winrepo Database:
-  module.run:
-    - name: winrepo.genrepo
+  cmd.run:
+    - name: 'salt-call --local winrepo.genrepo --out=quiet'
     - onchanges:
       - file: 'Manage Powershell Winrepo Definition File'
 
@@ -93,8 +93,7 @@ Refresh Minion Package Manager Database Cache:
   module.run:
     - name: pkg.refresh_db
     - onchanges:
-      - module: 'Compile Local Winrepo Database'
-
+      - cmd: 'Compile Local Winrepo Database'  # <--- Changed from 'module' to 'cmd'
   {%- else %}
 Skip Winrepo Definition For Zip Deployment:
   test.nop: []

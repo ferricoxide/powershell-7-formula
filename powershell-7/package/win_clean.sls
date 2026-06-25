@@ -28,8 +28,8 @@ Remove PowerShell Custom Installation Tree:
 {%- else %}
 
 Compile Local Winrepo Database After Deletion:
-  module.run:
-    - name: winrepo.genrepo
+  cmd.run:
+    - name: 'salt-call --local winrepo.genrepo --out=quiet'
     - onchanges:
         - file: 'Remove Powershell Winrepo Definition File'
 
@@ -37,7 +37,7 @@ Refresh Minion Package Manager Database Cache After Deletion:
   module.run:
     - name: pkg.refresh_db
     - onchanges:
-        - module: 'Compile Local Winrepo Database After Deletion'
+        - cmd: 'Compile Local Winrepo Database After Deletion'
 
 Remove PowerShell Core Package:
   pkg.removed:
@@ -48,5 +48,4 @@ Remove PowerShell Core Package:
 Remove Powershell Winrepo Definition File:
   file.absent:
     - name: '{{ winrepo_file }}'
-
 {%- endif %}
